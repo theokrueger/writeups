@@ -40,8 +40,6 @@ how handy, lets try running it by modifying the python script with our own local
 
 which worked first try. we now have a cool shell as the `arctic\tolis` user.
 
-# pwning
-
 first lets find the user flag by searching for it:
 
 search the system for flag files:
@@ -51,7 +49,7 @@ search the system for flag files:
 > where /r c: *.txt
 ```
 
-the user flag is located in `C:\Users\tolis\Desktop\user.txt`
+the user flag is located in `c:\Users\tolis\Desktop\user.txt`
 
 use `type` to print the contents of the file.
 
@@ -61,6 +59,8 @@ use `type` to print the contents of the file.
 ```
 
 escalation time!
+
+# pwning
 
 first, lets get an idea of what machine we are running on.
 
@@ -79,7 +79,7 @@ looks like the server is an x86_64 windows 7 SP0 (equivalent) machine.
 
 three escalation vulnerabilities we can try are MS10-092, MS10-059, and MS10-015
 
-in this case i will be using an MS10-059 exploit from [this repo](https://github.com/egre55/windows-kernel-exploits/tree/master/MS10-059:%20Chimichurri/Source)
+in this case we will be using an MS10-059 exploit from [this repo](https://github.com/egre55/windows-kernel-exploits/tree/master/MS10-059:%20Chimichurri/Source)
 
 after compiling the sources or downloading the precompiled binary, the easiest delivery method is to send it over a [powershell script](chimichurri.ps1)
 

